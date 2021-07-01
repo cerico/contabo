@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  connection: local
+  vars_files:
+    - config
+  tasks:
+    - name: Set up ssh key login for the root user
+      shell: "ssh-copy-id -i {{ root_user_public_key_local_path }} root@{{ ip }}"

@@ -1,0 +1,148 @@
+---
+- name: Clone Rbenv
+  git: repo=git://github.com/rbenv/rbenv.git dest=~{{ deploy_user }}/.rbenv
+
+- name: Clone rbenv build
+  git: repo=git://github.com/rbenv/ruby-build.git dest=~{{ deploy_user }}/.rbenv/plugins/ruby-build
+
+- name: Add Rbenv build to .bashrc
+  lineinfile:
+    dest: "/home/{{ deploy_user }}/.bashrc"
+    regexp: 'export PATH="\$HOME/.rbenv/plugins/ruby-build/bin:\$PATH"'
+    line: 'export PATH="$HOME/.rbenv/plugins/ruby-build/bin:$PATH"'
+    state: present
+
+- name: Clone rbenv vars
+  git: repo=git://github.com/rbenv/rbenv-vars.git dest=~{{ deploy_user }}/.rbenv/plugins/rbenv-vars
+
+- name: source bashrc
+  shell: . /home/{{ deploy_user }}/.bashrc
+
+- name: check ruby {{ ruby_version }} is installed for system
+  shell: "/home/{{ deploy_user }}/.rbenv/bin/rbenv versions | grep {{ruby_version}}"
+  register: ruby_installed
+  changed_when: false
+  ignore_errors: yes
+  check_mode: no
+
+- name: rbenv install ruby
+  command: "/home/{{ deploy_user }}/.rbenv/bin/rbenv install --verbose {{ruby_version}}"
+  when:
+    - ruby_installed.rc != 0
+  async: 3600
+  poll: 10
+
+- name: check if current system ruby version is {{ ruby_version }}
+  shell: "/home/{{ deploy_user }}/.rbenv/bin/rbenv version | cut -d ' ' -f 1 | grep -Fx '{{ ruby_version }}'"
+  register: current_ruby_selected
+  changed_when: false
+  ignore_errors: yes
+  check_mode: no
+
+- name: rbenv set global ruby version and rehash
+  command: "/home/{{ deploy_user }}/.rbenv/bin/rbenv global {{ruby_version}} && rbenv rehash"
+  when:
+    - current_ruby_selected.rc != 0
+
+- name: 'install bundler v2'
+  command: "/home/{{ deploy_user }}/.rbenv/shims/gem install bundler -v 2.1.4"
+
+- name: 'install rails'
+  command: "/home/{{ deploy_user }}/.rbenv/shims/gem install rails"
+
+- name: Add Passenger apt key.
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 561F9B9CAC40B2F7
+    state: present
+  become: true
+  become_user: root
+
+- name: Add Phusion apt repo.
+  apt_repository:
+    repo: 'deb https://oss-binaries.phusionpassenger.com/apt/passenger {{ ansible_distribution_release }} main'
+    state: present
+    update_cache: true
+  become: true
+  become_user: root
+
+- name: Install Nginx and Passenger
+  apt:
+    name:
+      - nginx
+      - libnginx-mod-http-passenger
+    state: present
+  become: true
+  become_user: root
+
+- name: Ensure passenger module is enabled.
+  file:
+    src: /usr/share/nginx/modules-available/mod-http-passenger.load
+    dest: /etc/nginx/modules-enabled/50-mod-http-passenger.conf
+    state: link
+
+- name: Ask Passenger to use the Rbenv ruby
+  lineinfile:
+    dest: /etc/nginx/conf.d/mod-http-passenger.conf
+    regexp: '^passenger_ruby'
+    line: "passenger_ruby /home/{{ deploy_user }}/.rbenv/shims/ruby;"
+    state: present
+  become: true
+  become_user: root
+
+- name: Ensure default virtual host is removed.
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  become: true
+  become_user: root
+
+- name: Restart nginx service
+  service:
+    name: nginx
+    state: restarted
+  become: true
+  become_user: root
+
+- name: Let deploy user restart passenger without sudo
+  template: 
+    src: sudoers.j2
+    dest: /etc/sudoers
+    validate: 'visudo -cf %s'
+    mode: 0440
+  become: true
+  become_user: root
+
+- name: Install postgres packages
+  apt:
+    name:
+      - libpq-dev
+      - "postgresql-{{ postgresql_version }}"
+      - postgresql-contrib
+      - python3-psycopg2
+    state: present
+  become: true
+  become_user: root
+
+- name: Ensure all configured locales are present.
+  locale_gen: "name={{ item }} state=present"
+  with_items: "{{ postgresql_locales }}"
+  register: locale_gen_result
+  become: true
+  become_user: root
+
+- name: Force-restart PostgreSQL after new locales are generated.
+  service:
+    name: postgresql
+    state: restarted
+  when: locale_gen_result.changed
+  become: true
+  become_user: root
+
+- name: Ensure PostgreSQL is started and enabled on boot.
+  service:
+    name: postgresql
+    state: started
+    enabled: true
+  become: true
+  become_user: root

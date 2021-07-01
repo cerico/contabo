@@ -1,0 +1,30 @@
+---
+- hosts: webserver
+  become: true
+  vars_files:
+    - config
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+  roles: 
+    - role: install
+      tags: install
+
+- name: ruby, passenger, rails and nginx
+  hosts: webserver
+  vars_files:
+    - config
+  user: "{{ deploy_user }}"
+  become: true
+  become_user: "{{ deploy_user }}"
+  roles: 
+    - role: rails
+      tags: rails
+
+- name: zsh
+  hosts: webserver
+  vars_files:
+    - config
+  roles: 
+    - role: zsh
+      tags: zsh

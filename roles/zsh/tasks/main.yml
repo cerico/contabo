@@ -1,0 +1,54 @@
+---
+- name: chown to username you login and chmod as required
+  file:
+    path: /var/www/html
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: 0755
+
+- name: chown to username you login and chmod as required
+  file:
+    path: /etc/nginx/conf.d
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: 0755
+
+- name: Cloning oh-my-zsh
+  git:
+    repo=https://github.com/robbyrussell/oh-my-zsh
+    dest=~{{ deploy_user }}/.oh-my-zsh
+  
+- name: Copy zshenv
+  copy:
+    src: zshenv
+    dest: ~{{ deploy_user }}/.zshenv
+ 
+- name: Copy zshrc
+  copy:
+    src: zshrc
+    dest: ~{{ deploy_user }}/.zshrc
+
+- name: Copy zsh theme
+  copy:
+    src: cerico.zsh-theme
+    dest: ~{{ deploy_user }}/.oh-my-zsh/themes/cerico.zsh-theme
+   
+- name: Copy motd
+  copy:
+    src: motd
+    dest: /etc/profile.d/motd.sh
+
+- name: change user shell to zsh 
+  become: yes
+  user:
+    name: "{{ deploy_user }}"
+    shell: /bin/zsh
+
+- name: "update hostnames"
+  hostname:
+    name: "{{ hostname }}"
+
+- name: collect server info
+  shell: "curl -H 'User-Agent: keycdn-tools:https://picfair.com' 'https://tools.keycdn.com/geo.json?host={{ ip }}' > ~{{ deploy_user }}/provider.json"
+  args:
+    warn: false

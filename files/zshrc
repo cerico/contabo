@@ -1,0 +1,10 @@
+export ZSH=$HOME/.oh-my-zsh
+
+ZSH_THEME="cerico"
+
+plugins=(git)
+
+source $ZSH/oh-my-zsh.sh
+source $HOME/.zshenv
+eval "$(rbenv init - zsh)"
+sh /etc/profile.d/motd.sh

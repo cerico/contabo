@@ -1,0 +1,130 @@
+---
+- name: Create the user for deployment purpose
+  user:
+    name: "{{ deploy_user }}"
+    password: "{{ deploy_user_password | password_hash('sha512') }}"
+    groups:
+      - sudo
+    state: present
+    shell: /bin/bash
+  become: true
+
+- name: Set up ssh key login for the deployment user
+  authorized_key:
+    user: "{{ deploy_user }}"
+    state: present
+    key: "{{ lookup('file', deploy_user_public_key_local_path) }}"
+  become: true
+
+- name: Disable password based login
+  lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+  notify:
+    - restart sshd
+
+- name: Get software for apt repository management.
+  apt:
+    state: present
+    name:
+      - python3-apt
+      - python3-pycurl
+      - apt-transport-https
+      - gnupg2
+
+- name: Add Nodesource apt key.
+  apt_key:
+    url: https://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x1655A0AB68576280
+    id: "68576280"
+    state: present
+
+- name: Install the nodejs LTS repos
+  apt_repository:
+    repo: "deb https://deb.nodesource.com/node_12.x {{ ansible_distribution_release }} main"
+    state: present
+  register: node_repo
+
+- name: Update apt cache if repo was added.
+  apt: update_cache=yes
+  when: node_repo.changed
+
+- name: Add Yarn GPG public key
+  apt_key:
+    url: https://dl.yarnpkg.com/debian/pubkey.gpg
+    state: present
+
+- name: Ensure Debian sources list file exists for Yarn
+  file:
+    path: /etc/apt/sources.list.d/yarn.list
+    owner: root
+    mode: 0644
+    state: touch
+
+- name: Ensure Debian package is in sources list for Yarn
+  lineinfile:
+    dest: /etc/apt/sources.list.d/yarn.list
+    regexp: 'deb http://dl.yarnpkg.com/debian/ stable main'
+    line: 'deb http://dl.yarnpkg.com/debian/ stable main'
+    state: present
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install dependencies for compiling Ruby along with Node.js and Yarn
+  apt:
+    state: present
+    name:
+      - figlet
+      - git-core
+      - curl
+      - zlib1g-dev
+      - build-essential
+      - libssl-dev
+      - libreadline-dev
+      - libyaml-dev
+      - libsqlite3-dev
+      - sqlite3
+      - libxml2-dev
+      - libxslt1-dev
+      - libcurl4-openssl-dev
+      - software-properties-common
+      - libffi-dev
+      - dirmngr
+      - gnupg
+      - apt-transport-https
+      - ca-certificates
+      - redis-server
+      - redis-tools
+      - nodejs
+      - yarn
+      - zsh
+      - tree
+      - python3-certbot-nginx
+      - gconf-service
+      - wget
+      - apache2-utils
+      - jq
+      - unattended-upgrades
+
+- name: Install PM2
+  npm:
+    name: pm2
+    global: yes
+
+- name: make pm2 startup at system restart
+  command: pm2 startup systemd -u {{ deploy_user }} --hp /home/{{ deploy_user }}
+  become: true
+  become_user: root
+
+- name: Install snapd
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+
+- name: Install snap core
+  community.general.snap:
+    name: core
+
+- name: Install certbot snap with option --classic
+  community.general.snap:
+    name: certbot
+    classic: yes

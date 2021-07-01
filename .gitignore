@@ -1,0 +1,5 @@
+secrets
+config
+.vscode
+ansible.log
+node_modules
