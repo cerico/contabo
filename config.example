@@ -2,8 +2,8 @@
 ruby_version: '2.7.1'
 deploy_user: '{{ deploy_user }}'
 deploy_user_password: '{{ user_password }}'
-deploy_user_public_key_local_path: '~/.ssh/parnu/picfair_rsa.pub'
-root_user_public_key_local_path: '~/.ssh/parnu/root_rsa.pub'
+deploy_user_public_key_local_path: '~/.ssh/kawajevo/deploy_rsa.pub'
+root_user_public_key_local_path: '~/.ssh/kawajevo/root_rsa.pub'
 ip: 'io37.ch'
 postgresql_version: '13'
 postgresql_locales:
