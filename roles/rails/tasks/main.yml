@@ -1,9 +1,9 @@
 ---
 - name: Clone Rbenv
-  git: repo=git://github.com/rbenv/rbenv.git dest=~{{ deploy_user }}/.rbenv
+  git: repo=https://github.com/rbenv/rbenv.git dest=~{{ deploy_user }}/.rbenv
 
 - name: Clone rbenv build
-  git: repo=git://github.com/rbenv/ruby-build.git dest=~{{ deploy_user }}/.rbenv/plugins/ruby-build
+  git: repo=https://github.com/rbenv/ruby-build.git dest=~{{ deploy_user }}/.rbenv/plugins/ruby-build
 
 - name: Add Rbenv build to .bashrc
   lineinfile:
@@ -13,7 +13,7 @@
     state: present
 
 - name: Clone rbenv vars
-  git: repo=git://github.com/rbenv/rbenv-vars.git dest=~{{ deploy_user }}/.rbenv/plugins/rbenv-vars
+  git: repo=https://github.com/rbenv/rbenv-vars.git dest=~{{ deploy_user }}/.rbenv/plugins/rbenv-vars
 
 - name: source bashrc
   shell: . /home/{{ deploy_user }}/.bashrc

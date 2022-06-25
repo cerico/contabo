@@ -104,6 +104,7 @@
       - apache2-utils
       - jq
       - unattended-upgrades
+      - net-tools
 
 - name: Install PM2
   npm:

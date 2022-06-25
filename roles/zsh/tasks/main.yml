@@ -38,6 +38,11 @@
     src: motd
     dest: /etc/profile.d/motd.sh
 
+- name: Copy redirect-subdomains
+  copy:
+    src: redirect-subdomains.conf
+    dest: /etc/nginx/conf.d/redirect-subdomains.conf
+
 - name: change user shell to zsh 
   become: yes
   user:
