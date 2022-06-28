@@ -1,0 +1,10 @@
+server {
+    server_name lighthouses.io37.ch;
+    listen 80;
+    location = /favicon.ico {
+      alias /var/www/html/favicon.ico;
+    }
+    root /var/www/html/lighthouses.io37.ch;
+    index index.html;
+    add_header Content-Security-Policy "font-src 'self' https://rsms.me  https://*.gstatic.com data:; frame-src 'self'; connect-src 'self' https://apis.google.com; object-src 'none'; img-src 'self' https://*.ggpht.com https://*.googleapis.com https://*.gstatic.com data:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://d3js.org https://*.googleapis.com; style-src 'self' https://rsms.me https://*.googleapis.com 'unsafe-inline';form-action 'self'; base-uri 'self';default-src 'self';frame-ancestors 'self'";
+}
