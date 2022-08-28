@@ -1,6 +1,6 @@
 # Server Provision
 
-Tested on a Ubuntu 20.04 target vps. It will setup a server installed with the following.
+Tested on a Ubuntu 22.04 target vps. It will setup a server installed with the following.
 
 1. Ruby
 2. rbenv
