@@ -6,3 +6,5 @@ server:
 	ansible-playbook -e @secrets main.yml
 lighthouses.io37.ch:
 	ansible-playbook -e @secrets lighthouses.io37.ch.yml
+observatories.io37.ch:
+	ansible-playbook -e @secrets observatories.io37.ch.yml

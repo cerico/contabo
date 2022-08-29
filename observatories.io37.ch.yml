@@ -1,0 +1,51 @@
+---
+- hosts: webserver
+  vars_files:
+    - config
+  vars:
+    url: 'observatories.io37.ch' 
+    name: 'observatories.io37.ch'
+  tasks:
+    - name: 'lookup subdomain ip'
+      shell: nslookup {{ url }} | grep Address | tail -1 | awk -F ' ' '{ print $2 }'
+      register: target_ip
+
+    - name: 'lookup parnu ip'
+      shell: nslookup io37.ch | grep Address | tail -1 | awk -F ' ' '{ print $2 }'
+      register: parnu_ip
+
+    - name: 'check subdomain ip is on parnu and fail if it isnt'
+      fail: msg="Please point this subdomain to parnu on cloudflare"
+      when: parnu_ip.stdout != target_ip.stdout
+
+    - name: Copy nginx conf
+      template:
+        src: observatories.io37.ch.nginx.conf.j2
+        dest: /etc/nginx/conf.d/{{ url }}.conf
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+
+    - name: Creates directory
+      file:
+        path: /var/www/html/observatories.io37.ch
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+    - name: Copy test file
+      copy:
+        src: test.html
+        dest: /var/www/html/observatories.io37.ch/test.html
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+
+    - name: Stop nginx service
+      service:
+        name: nginx
+        state: stopped
+      become: true
+      become_user: root
+
+    - name: certify
+      become: true
+      become_user: root
+      shell: "certbot --nginx -n --agree-tos --email {{ email }} -d {{ url }}"

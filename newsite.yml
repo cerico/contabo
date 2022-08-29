@@ -4,7 +4,7 @@
 
   vars_prompt:
     - name: app_name
-      prompt: What is your app_name?
+      prompt: What is your app_name? - supply full url if you know it
       private: no
   vars_files:
     - config
